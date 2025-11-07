@@ -10,7 +10,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="icons\separator.ico" />
+    <Content Include="icons\separator.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="icons\separator_horizontal.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

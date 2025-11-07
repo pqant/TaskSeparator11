@@ -1,6 +1,7 @@
+using IWshRuntimeLibrary;
+using Splitter;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using IWshRuntimeLibrary;
 using WindowsShortcutFactory;
 using File = System.IO.File;
 
@@ -10,7 +11,6 @@ namespace TaskSplitter11
     {
         public enum ShowWindowCommands : int
         {
-
             SW_HIDE = 0,
             SW_SHOWNORMAL = 1,
             SW_NORMAL = 1,
@@ -36,8 +36,6 @@ namespace TaskSplitter11
             ShowWindowCommands FsShowCmd
         );
 
-
-
         public MainForm()
         {
             InitializeComponent();
@@ -45,39 +43,42 @@ namespace TaskSplitter11
 
         private void btnCreate_Click(object sender, EventArgs e)
         {
-
             //Setup & config
             var docsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            string appPath = Path.GetDirectoryName(Application.ExecutablePath);
+            string appPath = Path.GetDirectoryName(Application.ExecutablePath) ?? string.Empty;
             string shortcutsPath = Path.Join(docsPath, "TaskSeparator11", "Shortcuts");
             Directory.CreateDirectory(shortcutsPath);
 
-            //Ensure files are in thwe right place
+            //Ensure files are in the right place
             EnsureSplitterFilesAreAvailable(appPath, shortcutsPath);
-            
-
 
             //Make a copy of the Splitter exe
             string splitterExe = Path.Join(appPath, "Splitter.exe");
             string splitterExeLocation = GetNewLinkName(shortcutsPath, "exe");
             File.Copy(splitterExe, splitterExeLocation);
 
-
             //Create a shortcut to the Splitter exe
             string linkLocation = GetNewLinkName(shortcutsPath, "lnk");
 
-            //Create shortcut
+            // Detect taskbar position and choose appropriate icon
+            var taskbarPosition = TaskbarHelper.GetTaskbarPosition();
+            bool isVerticalTaskbar = TaskbarHelper.IsVerticalTaskbar();
+
+            // Determine which icon to use based on taskbar position
+            string iconFileName = isVerticalTaskbar ? "separator_horizontal.ico" : "separator.ico";
+            string iconPath = Path.Join(shortcutsPath, "icons", iconFileName);
+
+            //Create shortcut with appropriate icon
             using var shortcut = new WindowsShortcut
             {
                 Path = splitterExeLocation,
+                IconLocation = new IconLocation(iconPath, 0),
             };
             shortcut.Save(linkLocation);
-
 
             ShellExecute(IntPtr.Zero, "open", linkLocation, "--gui", null, ShowWindowCommands.SW_NORMAL);
 
             Application.Exit();
-
         }
 
         private void EnsureSplitterFilesAreAvailable(string appPath, string shortcutsPath)
@@ -87,7 +88,7 @@ namespace TaskSplitter11
             var dir = new DirectoryInfo(appPath);
             var files = dir.GetFiles("Splitter*");
 
-            foreach(var f in files)
+            foreach (var f in files)
             {
                 var source = Path.Join(appPath, f.Name);
                 var dest = Path.Join(shortcutsPath, f.Name);
@@ -95,14 +96,28 @@ namespace TaskSplitter11
                 File.Copy(source, dest, true);
             }
 
+            // Also copy icons folder
+            string iconsSourcePath = Path.Join(appPath, "icons");
+            string iconsDestPath = Path.Join(shortcutsPath, "icons");
 
-            
+            if (Directory.Exists(iconsSourcePath))
+            {
+                Directory.CreateDirectory(iconsDestPath);
+
+                var iconFiles = new DirectoryInfo(iconsSourcePath).GetFiles("*.ico");
+                foreach (var iconFile in iconFiles)
+                {
+                    var source = Path.Join(iconsSourcePath, iconFile.Name);
+                    var dest = Path.Join(iconsDestPath, iconFile.Name);
+                    File.Copy(source, dest, true);
+                }
+            }
         }
 
         private string GetNewLinkName(string path, string ext)
         {
             int count = 1;
-            char c = ext == "exe" ? '_' : ' ';
+            char c = ext == "exe" ? '_' : ' ';
 
             string shortcutLink = Path.Join(path, $"{c}.{ext}");
             do
@@ -112,11 +127,6 @@ namespace TaskSplitter11
             } while (File.Exists(shortcutLink));
 
             return shortcutLink;
-        }
-
-        private void label3_Click(object sender, EventArgs e)
-        {
-
         }
     }
 }
