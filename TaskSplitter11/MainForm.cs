@@ -32,7 +32,7 @@ namespace TaskSplitter11
             string lpszOp,
             string lpszFile,
             string lpszParams,
-            string lpszDir,
+            string? lpszDir,
             ShowWindowCommands FsShowCmd
         );
 
@@ -76,7 +76,7 @@ namespace TaskSplitter11
             };
             shortcut.Save(linkLocation);
 
-            ShellExecute(IntPtr.Zero, "open", linkLocation, "--gui", null, ShowWindowCommands.SW_NORMAL);
+            ShellExecute(IntPtr.Zero, "open", linkLocation, "--gui", lpszDir: null, ShowWindowCommands.SW_NORMAL);
 
             Application.Exit();
         }
